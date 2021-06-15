@@ -1,0 +1,9 @@
+app/static/*
+
+app/media/*
+
+/db/*
+
+*.pyc
+
+

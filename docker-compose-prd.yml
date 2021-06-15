@@ -1,0 +1,56 @@
+version: "3.9"
+   
+services:
+  app:
+    build: .
+    container_name: app-django-prd-challenge
+    command: gunicorn --bind=:8000 --reload main.wsgi
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./app:/app
+    env_file:
+      - ./.env-prd
+    expose: 
+      - 8000
+    networks:
+      - django-challenger
+
+  db:
+    container_name: db-django-prd-challenge
+    image: postgres:13
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "postgres"
+      POSTGRES_DB: "challenge"
+    volumes:
+      - ./db/prd:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 24
+    networks:
+      - django-challenger
+
+  nginx:
+    build: ./nginx
+    container_name: django-challenge-nginx-prd
+    volumes:
+      - ./app/media:/usr/src/app/media
+      - ./app/static:/usr/src/app/static
+    ports:
+      - "2324:80"
+    depends_on:
+      - app
+    networks:
+      - django-challenger
+      
+networks:
+  django-challenger:
+    name: django-challenger-prd
+    driver: bridge
